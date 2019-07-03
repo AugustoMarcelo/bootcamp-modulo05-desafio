@@ -11,6 +11,10 @@ export default class Main extends Component {
         newRepo: '',
         repositories: [],
         loading: false,
+        error: {
+            message: '',
+            status: false,
+        },
     };
 
     // Load locaStorage data
@@ -37,25 +41,42 @@ export default class Main extends Component {
 
     handleSubmit = async e => {
         e.preventDefault();
+
+        this.setState({ loading: true });
+
+        const { newRepo, repositories } = this.state;
+
         try {
-            this.setState({ loading: true });
-            const { newRepo, repositories } = this.state;
+            const duplicate = repositories.find(repo => {
+                return repo.name === newRepo;
+            });
+
+            if (duplicate) {
+                throw new Error('Duplicated repository');
+            }
+
             const response = await api.get(`/repos/${newRepo}`);
+
             const data = {
                 name: response.data.full_name,
             };
+
             this.setState({
                 repositories: [...repositories, data],
                 newRepo: '',
                 loading: false,
+                error: false,
             });
         } catch (err) {
-            console.log('Repo inexistente');
+            this.setState({
+                loading: false,
+                error: { message: err.message, status: true },
+            });
         }
     };
 
     render() {
-        const { newRepo, repositories, loading } = this.state;
+        const { newRepo, repositories, loading, error } = this.state;
 
         return (
             <Container>
@@ -63,14 +84,14 @@ export default class Main extends Component {
                     <FaGithubAlt />
                     Repositórios
                 </h1>
-                <Form onSubmit={this.handleSubmit}>
+                <Form onSubmit={this.handleSubmit} error={error.status}>
                     <input
                         type="text"
                         placeholder="Adicionar repositório"
                         value={newRepo}
                         onChange={this.handleInputChange}
                     />
-                    <SubmitButton loading={loading}>
+                    <SubmitButton loading={loading ? 1 : 0}>
                         {loading ? (
                             <FaSpinner color="#FFF" size={14} />
                         ) : (
@@ -78,6 +99,7 @@ export default class Main extends Component {
                         )}
                     </SubmitButton>
                 </Form>
+                <small>{error.status && error.message}</small>
                 <List>
                     {repositories.map(repository => (
                         <li key={repository.name}>

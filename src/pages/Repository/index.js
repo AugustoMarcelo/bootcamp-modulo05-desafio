@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import api from '../../services/api';
 
 import Container from '../../components/Container';
-import { Loading, Owner, IssueList } from './styles';
+import { Loading, Owner, IssueList, Filter, Pagination } from './styles';
 
 export default class Repository extends Component {
     static propTypes = {
@@ -19,19 +19,25 @@ export default class Repository extends Component {
         repository: {},
         issues: [],
         loading: true,
+        state: 'all',
+        pagination: {
+            page: 1,
+            limit: 5,
+        },
     };
 
     async componentDidMount() {
         const { match } = this.props;
-
+        const { pagination, state } = this.state;
         const repoName = decodeURIComponent(match.params.repository);
 
         const [repository, issues] = await Promise.all([
             api.get(`/repos/${repoName}`),
             api.get(`/repos/${repoName}/issues`, {
                 params: {
-                    state: 'open',
+                    state,
                     per_page: 5,
+                    page: pagination.page,
                 },
             }),
         ]);
@@ -43,8 +49,52 @@ export default class Repository extends Component {
         });
     }
 
+    loadIssues = async () => {
+        const { match } = this.props;
+
+        const { pagination, state } = this.state;
+
+        const repoName = decodeURIComponent(match.params.repository);
+
+        const issues = await api.get(`/repos/${repoName}/issues`, {
+            params: {
+                state,
+                per_page: 5,
+                page: pagination.page,
+            },
+        });
+
+        this.setState({ issues: issues.data });
+    };
+
+    handleSelect = async e => {
+        const state = e.target.value;
+        this.setState({ state });
+        this.loadIssues();
+    };
+
+    handleNextPage = async () => {
+        this.setState(state => ({
+            pagination: {
+                ...state.pagination,
+                page: state.pagination.page + 1,
+            },
+        }));
+        this.loadIssues();
+    };
+
+    handlePreviousPage = async () => {
+        this.setState(state => ({
+            pagination: {
+                ...state.pagination,
+                page: state.pagination.page - 1,
+            },
+        }));
+        this.loadIssues();
+    };
+
     render() {
-        const { repository, issues, loading } = this.state;
+        const { repository, issues, loading, pagination } = this.state;
 
         if (loading) {
             return <Loading>Carregando</Loading>;
@@ -61,7 +111,20 @@ export default class Repository extends Component {
                     <h1>{repository.name}</h1>
                     <p>{repository.description}</p>
                 </Owner>
-
+                <Filter>
+                    <span>Select a status: </span>
+                    <select
+                        name="status"
+                        id="status"
+                        onChange={this.handleSelect}
+                    >
+                        <option value="all" defaultValue="selected">
+                            All
+                        </option>
+                        <option value="open">Open</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </Filter>
                 <IssueList>
                     {issues.map(issue => (
                         <li key={String(issue.id)}>
@@ -83,6 +146,18 @@ export default class Repository extends Component {
                         </li>
                     ))}
                 </IssueList>
+                <Pagination>
+                    <button
+                        disabled={pagination.page === 1 && 'disabled'}
+                        type="button"
+                        onClick={this.handlePreviousPage}
+                    >
+                        Anterior
+                    </button>
+                    <button type="button" onClick={this.handleNextPage}>
+                        Próximo
+                    </button>
+                </Pagination>
             </Container>
         );
     }

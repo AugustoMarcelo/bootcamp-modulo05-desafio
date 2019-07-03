@@ -18,6 +18,10 @@ const Container = styled.div`
             margin-right: 10px;
         }
     }
+
+    small {
+        color: red;
+    }
 `;
 
 export default Container;
