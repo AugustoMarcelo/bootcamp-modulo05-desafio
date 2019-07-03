@@ -68,13 +68,14 @@ export default class Repository extends Component {
     };
 
     handleSelect = async e => {
+        const { pagination } = this.state;
         const state = e.target.value;
-        this.setState({ state });
+        await this.setState({ state, pagination: { ...pagination, page: 1 } });
         this.loadIssues();
     };
 
     handleNextPage = async () => {
-        this.setState(state => ({
+        await this.setState(state => ({
             pagination: {
                 ...state.pagination,
                 page: state.pagination.page + 1,
@@ -84,7 +85,7 @@ export default class Repository extends Component {
     };
 
     handlePreviousPage = async () => {
-        this.setState(state => ({
+        await this.setState(state => ({
             pagination: {
                 ...state.pagination,
                 page: state.pagination.page - 1,
