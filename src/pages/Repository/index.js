@@ -155,7 +155,11 @@ export default class Repository extends Component {
                     >
                         Anterior
                     </button>
-                    <button type="button" onClick={this.handleNextPage}>
+                    <button
+                        disabled={issues.length === 0 && 'disabled'}
+                        type="button"
+                        onClick={this.handleNextPage}
+                    >
                         Próximo
                     </button>
                 </Pagination>
